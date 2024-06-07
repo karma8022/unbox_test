@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: speedometer
+
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastapi:
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:password@mysql:3306/speedometer
+    ports:
+      - "8000:8000"
+
+  react:
+    image: node:14
+    command: sh -c "cd /app && npm install && npm start"
+    volumes:
+      - ./react-app:/app
+    ports:
+      - "3000:3000"
