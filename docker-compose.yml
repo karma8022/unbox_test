@@ -3,12 +3,18 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
+    container_name: mysql_db
+    restart: always
     environment:
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: speedometer
 
     ports:
-      - "3308:3306"
+      - "3306:3306"
+    expose:
+      - "3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "--silent"]
       interval: 10s
@@ -16,12 +22,13 @@ services:
       retries: 5
 
   fastapi:
-    build: .
+    build: ./backend
     depends_on:
       mysql:
         condition: service_healthy
+    command: uvicorn main:app --reload
     environment:
-      DATABASE_URL: mysql://root:password@mysql:3306/speedometer
+      DATABASE_URL: mysql://root:password@mysql_db:3306/speedometer
     ports:
       - "8000:8000"
 
@@ -32,3 +39,10 @@ services:
       - ./react-app:/app
     ports:
       - "3000:3000"
+  
+  # backend:
+  #   image: backend
+  #   command: uvicorn main:app --reload
+
+  speedometer-frontend:
+    image: speedometer-frontend
